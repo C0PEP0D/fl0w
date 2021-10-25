@@ -1,0 +1,3 @@
+[submodule "thirdparty/turblib"]
+	path = thirdparty/turblib
+	url = https://github.com/C0PEP0D/turblib.git
