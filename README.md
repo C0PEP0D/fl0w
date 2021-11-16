@@ -49,7 +49,7 @@ One should either install Eigen accordingly, or adapt its path in the **CMakeLis
 Start by cloning this repository.
 
 ```sh
-$ git clone --recursive https://gitlab.com/rmonthil/c0pep0d.git
+$ git clone --recursive https://github.com/C0PEP0D/fl0w.git
 ```
 
 ### Examples
