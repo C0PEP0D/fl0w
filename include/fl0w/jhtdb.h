@@ -23,7 +23,7 @@ namespace fl0w {
 template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
 class JHTDB : public Flow<TypeVector, TypeMatrix, TypeRef> {
     public:
-        JHTDB() : sAuthtoken(std::make_shared<std::string>("edu.jhu.pha.turbulence.testing-201406")), spatialInterp(Lag6), spatialGradInterp(FD4Lag4), temporalInterp(NoTInt), attemptsNb(360), sDataset(std::make_shared<std::string>("")), maxPointsNbPerQuery(512) {
+        JHTDB() : sAuthtoken(std::make_shared<std::string>("edu.jhu.pha.turbulence.testing-201406")), spatialInterp(Lag6), spatialGradInterp(FD4Lag4), temporalInterp(NoTInt), attemptsNb(360), sDataset(std::make_shared<std::string>("")), maxPointsNbPerQuery(4096) {
             selectDataset("isotropic1024coarse");
             ::soapinit();
             ::turblibSetExitOnError(0);
