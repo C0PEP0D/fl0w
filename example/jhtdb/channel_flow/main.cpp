@@ -5,7 +5,7 @@
 // Thirdparties includes
 #include <Eigen/Dense>
 // Lib includes
-#include "fl0w/jhtdb.h"
+#include "fl0w/jhtdb/channel_flow.h"
 
 const unsigned int DIM = 3;
 
@@ -14,7 +14,7 @@ using TypeVector = Eigen::Matrix<TypeScalar, DIM, 1>;
 using TypeMatrix = Eigen::Matrix<TypeScalar, DIM, DIM>;
 template<typename... Args>
 using TypeRef = Eigen::Ref<Args...>;
-using TypeFlow = fl0w::JHTDB<TypeVector, TypeMatrix, TypeRef>;
+using TypeFlow = fl0w::jhtdb::ChannelFlow<TypeVector, TypeMatrix, TypeRef>;
 
 void print(const TypeFlow& flow, const TypeVector& x, const TypeScalar& t) {
     std::cout << std::endl;
@@ -28,7 +28,7 @@ int main () {
     TypeVector x;
     double t;
     // Init
-    x << 1.0, 1.0, 1.0;
+    x << 1.0, 0.5, 1.0;
     t = 1.0;
     print(flow, x, t);
 }
