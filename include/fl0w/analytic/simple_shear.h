@@ -7,6 +7,8 @@
 
 namespace fl0w {
 
+namespace analytic {
+
 template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
 class SimpleShear : public Flow<TypeVector, TypeMatrix, TypeRef> {
     public:
@@ -51,6 +53,8 @@ template<typename TypeVector, typename TypeMatrix, template<typename...> class T
 TypeVector SimpleShear<TypeVector, TypeMatrix, TypeRef>::getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const {
     TypeVector a; a.fill(0.0);
     return a;
+}
+
 }
 
 }

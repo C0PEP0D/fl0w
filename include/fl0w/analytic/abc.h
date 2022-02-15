@@ -9,6 +9,8 @@
 
 namespace fl0w {
 
+namespace analytic {
+
 template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
 class ABC : public Flow<TypeVector, TypeMatrix, TypeRef> {
     public:
@@ -47,6 +49,8 @@ TypeMatrix ABC<TypeVector, TypeMatrix, TypeRef>::getJacobian(const TypeRef<const
 template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
 TypeVector ABC<TypeVector, TypeMatrix, TypeRef>::getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const {
     return TypeVector::Zero();
+}
+
 }
 
 }

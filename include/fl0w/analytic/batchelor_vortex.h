@@ -8,6 +8,8 @@
 
 namespace fl0w {
 
+namespace analytic {
+
 template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
 class BatchelorVortex : public Flow<TypeVector, TypeMatrix, TypeRef> {
     public:
@@ -96,6 +98,8 @@ TypeMatrix BatchelorVortex<TypeVector, TypeMatrix, TypeRef>::getJacobian(const T
         J.fill(0.0);
     }
     return J;
+}
+
 }
 
 }
