@@ -7,51 +7,70 @@
 
 namespace fl0w {
 
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
+template<typename _TypeVector, typename _TypeMatrix, template<typename...> class _TypeRef>
 class Flow {
-    public:
-        Flow();
-        
-        virtual TypeVector getVelocity(const TypeRef<const TypeVector>& x, const double& t) const = 0;
-        virtual TypeMatrix getJacobian(const TypeRef<const TypeVector>& x, const double& t) const = 0;
-        virtual TypeVector getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const = 0;
-        
-        TypeVector getVorticity(const TypeRef<const TypeVector>& x, const double& t) const;
-        TypeMatrix getStrain(const TypeRef<const TypeVector>& x, const double& t) const;
+	public:
+		using TypeVector = _TypeVector;
+		using TypeMatrix = _TypeMatrix;
+		template<typename... Args>
+		using TypeRef = _TypeRef<Args...>;
+	public:
+		Flow() {
+			
+		}
+	public:
+		virtual TypeVector getVelocity(const TypeRef<const TypeVector>& x, const double& t) const = 0;
+		virtual TypeMatrix getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const = 0;
+		virtual TypeVector getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const = 0;
 };
 
-// Flow class
+template<typename TypeFlow>
+class FlowFrozen : public TypeFlow {
+	public:
+		using Type = TypeFlow;
+		using typename Type::TypeVector;
+		using typename Type::TypeMatrix;
+	public:
+		FlowFrozen(const double& p_time) : TypeFlow(), time(p_time) {
+			
+		}
+	public:
+		TypeVector getVelocity(const typename Type::TypeRef<const TypeVector>& x, const double& t) const override {
+			return Type::getVelocity(x, time);
+		}
+		TypeMatrix getVelocityGradients(const typename Type::TypeRef<const TypeVector>& x, const double& t) const override {
+			return Type::getVelocityGradients(x, time);
+		}
+		TypeVector getAcceleration(const typename Type::TypeRef<const TypeVector>& x, const double& t) const override {
+			return Type::getAcceleration(x, time);
+		}
+	public:
+		double time;
+};
 
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-Flow<TypeVector, TypeMatrix, TypeRef>::Flow() {
-
-}
-
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TypeVector Flow<TypeVector, TypeMatrix, TypeRef>::getVorticity(const TypeRef<const TypeVector>& x, const double& t) const {
-    // Get jacobian
-    TypeMatrix J = getJacobian(x, t);
-    // Get vorticity from jacobian
-    TypeVector w;
-    for(std::size_t i = 0; i < w.size(); i++) {
-        w(i) = 0.5 * ( J((i+2) % w.size(), (i+1) % w.size()) - J((i+1) % w.size(), (i+2) % w.size()) );
-    }
-    return w;
-}
-
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TypeMatrix Flow<TypeVector, TypeMatrix, TypeRef>::getStrain(const TypeRef<const TypeVector>& x, const double& t) const {
-    // Get jacobian
-    TypeMatrix J = getJacobian(x, t);
-    // Get strain from jacobian
-    TypeMatrix S;
-    for(std::size_t i = 0; i < S.cols(); i++) {
-        for(std::size_t j = 0; j < S.cols(); j++) {
-            S(i, j) = 0.5 * ( J(i, j) + J(j, i) );
-        }
-    }
-    return S;
-}
+template<typename TypeFlow>
+class FlowReverse : public TypeFlow {
+	public:
+		using Type = TypeFlow;
+		using typename Type::TypeVector;
+		using typename Type::TypeMatrix;
+	public:
+		FlowReverse(const double& p_time) : TypeFlow(), time(p_time) {
+			
+		}
+	public:
+		TypeVector getVelocity(const typename Type::TypeRef<const TypeVector>& x, const double& t) const override {
+			return -Type::getVelocity(x, time - t);
+		}
+		TypeMatrix getVelocityGradients(const typename Type::TypeRef<const TypeVector>& x, const double& t) const override {
+			return -Type::getVelocityGradients(x, time - t);
+		}
+		TypeVector getAcceleration(const typename Type::TypeRef<const TypeVector>& x, const double& t) const override {
+			return -Type::getAcceleration(x, time - t);
+		}
+	public:
+		double time;
+};
 
 }
 

@@ -52,12 +52,12 @@ class JHTDB : public Flow<TypeVector, TypeMatrix, TypeRef> {
 			}
 		}
 
-		TypeMatrix getJacobian(const TypeRef<const TypeVector>& x, const double& t) const override {
+		TypeMatrix getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const override {
 			std::string key = std::to_string(x[0]) + "_" + std::to_string(x[1]) + "_" + std::to_string(x[2]);
-			if(preparedJacobians.count(key) == 1) {
-				return preparedJacobians.at(key);
+			if(preparedVelocityGradientss.count(key) == 1) {
+				return preparedVelocityGradientss.at(key);
 			} else {
-				return queryJacobian(x, t);
+				return queryVelocityGradients(x, t);
 			}
 		}
 
@@ -112,7 +112,7 @@ class JHTDB : public Flow<TypeVector, TypeMatrix, TypeRef> {
 			return u;
 		}
 
-		TypeMatrix queryJacobian(const TypeRef<const TypeVector>& x, const double& t) const {
+		TypeMatrix queryVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const {
 			// init
 			float points[1][3];
 			float result[1][9];
@@ -122,10 +122,10 @@ class JHTDB : public Flow<TypeVector, TypeMatrix, TypeRef> {
 			int attempts = 0;
 			while(::getVelocityGradient(&((*sAuthtoken)[0]), &((*sDataset)[0]), t, FD4Lag4, NoTInt, 1, points, result) != SOAP_OK) {
 				if (attempts++ > attemptsNb) {
-					std::cout << "ERROR: JHTDBFluid getJacobian Fatal Error: too many query failures." << std::endl;
+					std::cout << "ERROR: JHTDBFluid getVelocityGradients Fatal Error: too many query failures." << std::endl;
 					::exit(EXIT_FAILURE);
 				} else {
-					std::cout << "WARNING: JHTDBFluid getJacobian Error: " << ::turblibGetErrorString() << " . Trying again in 1s." << std::endl;
+					std::cout << "WARNING: JHTDBFluid getVelocityGradients Error: " << ::turblibGetErrorString() << " . Trying again in 1s." << std::endl;
 				}
 				std::this_thread::sleep_for(std::chrono::seconds(1));
 			}
@@ -183,7 +183,7 @@ class JHTDB : public Flow<TypeVector, TypeMatrix, TypeRef> {
 			return velocities;
 		}
 
-		std::vector<TypeMatrix> queryJacobians(const std::vector<TypeVector>& positions, const double& t) const {
+		std::vector<TypeMatrix> queryVelocityGradientss(const std::vector<TypeVector>& positions, const double& t) const {
 			// init
 			//float points[positions.size()][3];
 			//float result[positions.size()][3];
@@ -204,10 +204,10 @@ class JHTDB : public Flow<TypeVector, TypeMatrix, TypeRef> {
 				int attempts = 0;
 				while(::getVelocityGradient(&((*sAuthtoken)[0]), &((*sDataset)[0]), t, FD4Lag4, NoTInt, std::min(positions.size() - startQueryIndex, maxPointsNbPerQuery), points_tmp, result_tmp) != SOAP_OK) {
 					if (attempts++ > attemptsNb) {
-						std::cout << "ERROR: JHTDBFluid getJacobian Fatal Error: too many query failures." << std::endl;
+						std::cout << "ERROR: JHTDBFluid getVelocityGradients Fatal Error: too many query failures." << std::endl;
 						::exit(EXIT_FAILURE);
 					} else {
-						std::cout << "WARNING: JHTDBFluid getJacobian Error: " << ::turblibGetErrorString() << " . Trying again in 1s." << std::endl;
+						std::cout << "WARNING: JHTDBFluid getVelocityGradients Error: " << ::turblibGetErrorString() << " . Trying again in 1s." << std::endl;
 					}
 					std::this_thread::sleep_for(std::chrono::seconds(1));
 				}
@@ -239,19 +239,19 @@ class JHTDB : public Flow<TypeVector, TypeMatrix, TypeRef> {
 			}
 		}
 		
-		void prepareJacobians(const std::vector<TypeVector>& positions, const double& t) {
+		void prepareVelocityGradientss(const std::vector<TypeVector>& positions, const double& t) {
 			// get jacobians
-			std::vector<TypeMatrix> jacobians = queryJacobians(positions, t);
+			std::vector<TypeMatrix> jacobians = queryVelocityGradientss(positions, t);
 			// set prepared jacobians
-			preparedJacobians.clear();
+			preparedVelocityGradientss.clear();
 			for(unsigned int i = 0; i < positions.size(); i++) {
-				preparedJacobians[std::to_string(positions[i][0]) + "_" + std::to_string(positions[i][1]) + "_" + std::to_string(positions[i][2])] = jacobians[i];
+				preparedVelocityGradientss[std::to_string(positions[i][0]) + "_" + std::to_string(positions[i][1]) + "_" + std::to_string(positions[i][2])] = jacobians[i];
 			}
 		}
 	public:
 		// data
 		std::unordered_map<std::string, TypeVector> preparedVelocities;
-		std::unordered_map<std::string, TypeMatrix> preparedJacobians;
+		std::unordered_map<std::string, TypeMatrix> preparedVelocityGradientss;
 		// query
 		std::shared_ptr<std::string> sAuthtoken;
 		enum SpatialInterpolation spatialInterp;

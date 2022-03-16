@@ -17,7 +17,7 @@ class BatchelorVortex : public Flow<TypeVector, TypeMatrix, TypeRef> {
 
         void create(const double& q, const double& r1, const double& r2);
         TypeVector getVelocity(const TypeRef<const TypeVector>& x, const double& t) const override;
-        TypeMatrix getJacobian(const TypeRef<const TypeVector>& x, const double& t) const override;
+        TypeMatrix getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const override;
         TypeVector getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const override;
 
         // Attributes :
@@ -72,7 +72,7 @@ TypeVector BatchelorVortex<TypeVector, TypeMatrix, TypeRef>::getAcceleration(con
 }
 
 template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TypeMatrix BatchelorVortex<TypeVector, TypeMatrix, TypeRef>::getJacobian(const TypeRef<const TypeVector>& x, const double& t) const {
+TypeMatrix BatchelorVortex<TypeVector, TypeMatrix, TypeRef>::getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const {
     TypeVector vr; vr = x; vr(2) = 0.0;
     const double r = vr.norm();
     TypeVector er;

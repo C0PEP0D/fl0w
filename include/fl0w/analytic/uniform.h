@@ -14,7 +14,7 @@ class Uniform : public Flow<TypeVector, TypeMatrix, TypeRef> {
         Uniform();
 
         TypeVector getVelocity(const TypeRef<const TypeVector>& x, const double& t) const override;
-        TypeMatrix getJacobian(const TypeRef<const TypeVector>& x, const double& t) const override;
+        TypeMatrix getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const override;
         TypeVector getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const override;
     public:
         TypeVector u;
@@ -32,7 +32,7 @@ TypeVector Uniform<TypeVector, TypeMatrix, TypeRef>::getVelocity(const TypeRef<c
 }
 
 template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TypeMatrix Uniform<TypeVector, TypeMatrix, TypeRef>::getJacobian(const TypeRef<const TypeVector>& x, const double& t) const {
+TypeMatrix Uniform<TypeVector, TypeMatrix, TypeRef>::getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const {
     return TypeMatrix::Zero();
 }
 

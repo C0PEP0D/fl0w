@@ -130,7 +130,7 @@ class Kinematic : public Turbulence<TypeVector, TypeMatrix, TypeRef> {
         
         TypeVector getVelocity(const TypeRef<const TypeVector>& x, const double& t) const override;
         TypeVector getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const override;
-        TypeMatrix getJacobian(const TypeRef<const TypeVector>& x, const double& t) const override;
+        TypeMatrix getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const override;
 
         // Attributes :
         std::shared_ptr<randgen::Generator<double>> sRandomGenerator;
@@ -271,7 +271,7 @@ TypeVector Kinematic<TypeVector, TypeMatrix, TypeRef, TypeContainer>::getAcceler
 }
 
 template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef, template<typename...> class TypeContainer>
-TypeMatrix Kinematic<TypeVector, TypeMatrix, TypeRef, TypeContainer>::getJacobian(const TypeRef<const TypeVector>& x, const double& t) const {
+TypeMatrix Kinematic<TypeVector, TypeMatrix, TypeRef, TypeContainer>::getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const {
     TypeMatrix J;
     for(size_t i = 0; i < x.size(); i++) {
         // zero u creation

@@ -16,7 +16,7 @@ class SimpleShear : public Flow<TypeVector, TypeMatrix, TypeRef> {
 
         void create(const double& gamma);
         TypeVector getVelocity(const TypeRef<const TypeVector>& x, const double& t) const override;
-        TypeMatrix getJacobian(const TypeRef<const TypeVector>& x, const double& t) const override;
+        TypeMatrix getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const override;
         TypeVector getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const override;
 
         // Attributes :
@@ -43,7 +43,7 @@ TypeVector SimpleShear<TypeVector, TypeMatrix, TypeRef>::getVelocity(const TypeR
 }
 
 template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TypeMatrix SimpleShear<TypeVector, TypeMatrix, TypeRef>::getJacobian(const TypeRef<const TypeVector>& x, const double& t) const {
+TypeMatrix SimpleShear<TypeVector, TypeMatrix, TypeRef>::getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const {
     TypeMatrix J; J.fill(0.0);
     J(0,1) = gamma;
     return J;

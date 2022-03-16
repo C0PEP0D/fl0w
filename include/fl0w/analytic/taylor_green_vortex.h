@@ -17,7 +17,7 @@ class TaylorGreenVortex : public Flow<TypeVector, TypeMatrix, TypeRef> {
         TaylorGreenVortex();
 
         TypeVector getVelocity(const TypeRef<const TypeVector>& x, const double& t) const override;
-        TypeMatrix getJacobian(const TypeRef<const TypeVector>& x, const double& t) const override;
+        TypeMatrix getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const override;
         TypeVector getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const override;
 };
 
@@ -37,7 +37,7 @@ TypeVector TaylorGreenVortex<TypeVector, TypeMatrix, TypeRef>::getVelocity(const
 }
 
 template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TypeMatrix TaylorGreenVortex<TypeVector, TypeMatrix, TypeRef>::getJacobian(const TypeRef<const TypeVector>& x, const double& t) const {
+TypeMatrix TaylorGreenVortex<TypeVector, TypeMatrix, TypeRef>::getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const {
     TypeMatrix J = TypeMatrix::Zero();
     J(0,0) = -std::sin(x(0)) * std::sin(x(1)); J(0,1) = std::cos(x[0]) * std::cos(x[1]);
     J(1,0) = -std::cos(x[0]) * std::cos(x(1)); J(1,1) = std::sin(x(0)) * std::sin(x(1));
