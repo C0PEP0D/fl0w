@@ -29,7 +29,7 @@ class JHTDB : public Flow<TypeVector, TypeMatrix, TypeRef> {
 			sAuthtoken(std::make_shared<std::string>("edu.jhu.pha.turbulence.testing-201406")), 
 			spatialInterp(Lag6), 
 			spatialGradInterp(FD4Lag4), 
-			temporalInterp(NoTInt), 
+			temporalInterp(PCHIPInt),
 			attemptsNb(360), 
 			sDataset(std::make_shared<std::string>(dataset)), 
 			maxPointsNbPerQuery(4096)
