@@ -27,6 +27,7 @@ class JHTDB : public Flow<TypeVector, TypeMatrix, TypeRef> {
 	public:
 		JHTDB(const std::string& dataset) : 
 			sAuthtoken(std::make_shared<std::string>("edu.jhu.pha.turbulence.testing-201406")), 
+			sField(std::make_shared<std::string>("velocity")), 
 			spatialInterp(Lag6), 
 			spatialGradInterp(FD4Lag4), 
 			temporalInterp(PCHIPInt),
@@ -112,6 +113,31 @@ class JHTDB : public Flow<TypeVector, TypeMatrix, TypeRef> {
 			return u;
 		}
 
+		TypeVector queryVelocityFiltered(const TypeRef<const TypeVector>& x, const double& t, const double& width) const {
+			// init
+			float points[1][3];
+			float result[1][3];
+			// copy double vector x to float array points
+			queryPointFromX(points[0], x);
+			// get velocity into results
+			int attempts = 0;
+			while(::getBoxFilter(&((*sAuthtoken)[0]), &((*sDataset)[0]), &((*sField)[0]), t, width, 1, points, result) != SOAP_OK) {
+				if (attempts++ > attemptsNb) {
+					std::cout << "ERROR: JHTDBFluid getVelocity Fatal Error: too many query failures." << std::endl;
+					::exit(EXIT_FAILURE);
+				} else {
+					std::cout << "WARNING: JHTDBFluid getVelocity Error: " << ::turblibGetErrorString() << " . Trying again in 1s." << std::endl;
+				}
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+			}
+			// copy float array results into vector u
+			TypeVector u;
+			for(unsigned int i = 0; i < 3; i++) {
+				u[i] = result[0][i];
+			}
+			return u;
+		}
+
 		TypeMatrix queryVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const {
 			// init
 			float points[1][3];
@@ -121,6 +147,33 @@ class JHTDB : public Flow<TypeVector, TypeMatrix, TypeRef> {
 			// get gradient into results
 			int attempts = 0;
 			while(::getVelocityGradient(&((*sAuthtoken)[0]), &((*sDataset)[0]), t, FD4Lag4, NoTInt, 1, points, result) != SOAP_OK) {
+				if (attempts++ > attemptsNb) {
+					std::cout << "ERROR: JHTDBFluid getVelocityGradients Fatal Error: too many query failures." << std::endl;
+					::exit(EXIT_FAILURE);
+				} else {
+					std::cout << "WARNING: JHTDBFluid getVelocityGradients Error: " << ::turblibGetErrorString() << " . Trying again in 1s." << std::endl;
+				}
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+			}
+			// copy float array results into J
+			TypeMatrix J;
+			for(unsigned int i = 0; i < 3; i++) {
+				for(unsigned int j = 0; j < 3; j++) {
+					J(i, j) = result[0][i * 3 + j];
+				}
+			}
+			return J;
+		}
+
+		TypeMatrix queryVelocityGradientsFiltered(const TypeRef<const TypeVector>& x, const double& t, const double& width) const {
+			// init
+			float points[1][3];
+			float result[1][9];
+			// copy double vector x to float array points
+			queryPointFromX(points[0], x);
+			// get gradient into results
+			int attempts = 0;
+			while(::getBoxFilterGradient(&((*sAuthtoken)[0]), &((*sDataset)[0]), &((*sField)[0]), t, width, 0.25 * width, 1, points, result) != SOAP_OK) {
 				if (attempts++ > attemptsNb) {
 					std::cout << "ERROR: JHTDBFluid getVelocityGradients Fatal Error: too many query failures." << std::endl;
 					::exit(EXIT_FAILURE);
@@ -261,6 +314,7 @@ class JHTDB : public Flow<TypeVector, TypeMatrix, TypeRef> {
 		long unsigned int maxPointsNbPerQuery;
 		// dataset
 		std::shared_ptr<std::string> sDataset;
+		std::shared_ptr<std::string> sField;
 		// numerical parameters
         double lx;
         double ly;
