@@ -11,43 +11,39 @@ namespace fl0w {
 
 namespace analytic {
 
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-class TaylorGreenVortex : public Flow<TypeVector, TypeMatrix, TypeRef> {
+template<typename _tSpaceVector, typename _tSpaceMatrix, template<typename...> class _tView>
+class FlowTaylorGreenVortex : public Flow<_tSpaceVector, _tSpaceMatrix, _tView> {
     public:
-        TaylorGreenVortex();
-
-        TypeVector getVelocity(const TypeRef<const TypeVector>& x, const double& t) const override;
-        TypeMatrix getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const override;
-        TypeVector getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const override;
+        using tBase = Flow<_tSpaceVector, _tSpaceMatrix, _tView>;
+        using typename tBase::tSpaceVector;
+        using typename tBase::tSpaceMatrix;
+        template<typename... Args> using tView = typename tBase::tView<Args...>;
+    public:
+        static tSpaceVector getVelocity(const double* pX, const double t) {
+            // TODO: BACK TO PREVIOUS DEFINITION
+            return 0.5 * tSpaceVector({
+                -std::cos(pX[0]) * std::sin(pX[1]), 
+                std::sin(pX[0]) * std::cos(pX[1])
+            });
+            // return tSpaceVector({
+                    // std::cos(pX[0]) * std::sin(pX[1]),
+                    // -std::sin(pX[0]) * std::cos(pX[1])
+            // });
+        };
+        static tSpaceMatrix getVelocityGradients(const double* pX, const double t) {
+            // TODO: BACK TO PREVIOUS DEFINITION
+            tSpaceMatrix velocityGradients = tSpaceMatrix::Zero();
+            velocityGradients(0,0) = std::sin(pX[0]) * std::sin(pX[1]); velocityGradients(0,1) = -std::cos(pX[0]) * std::cos(pX[1]);
+            velocityGradients(1,0) = std::cos(pX[0]) * std::cos(pX[1]); velocityGradients(1,1) = -std::sin(pX[0]) * std::sin(pX[1]);
+            return 0.5 * velocityGradients;
+            // velocityGradients(0,0) = -std::sin(pX[0]) * std::sin(pX[1]); velocityGradients(0,1) = std::cos(pX[0]) * std::cos(pX[1]);
+            // velocityGradients(1,0) = -std::cos(pX[0]) * std::cos(pX[1]); velocityGradients(1,1) = std::sin(pX[0]) * std::sin(pX[1]);
+            // return velocityGradients;
+        };
+        static tSpaceVector getAcceleration(const double* pX, const double t) {
+            return tSpaceVector::Zero();
+        };
 };
-
-// TaylorGreenVortex class
-
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TaylorGreenVortex<TypeVector, TypeMatrix, TypeRef>::TaylorGreenVortex() : Flow<TypeVector, TypeMatrix, TypeRef>::Flow() { 
-
-}
-
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TypeVector TaylorGreenVortex<TypeVector, TypeMatrix, TypeRef>::getVelocity(const TypeRef<const TypeVector>& x, const double& t) const {
-    TypeVector u = TypeVector::Zero();
-    u(0) = std::cos(x(0)) * std::sin(x(1));
-    u(1) = -std::sin(x(0)) * std::cos(x(1));
-    return u;
-}
-
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TypeMatrix TaylorGreenVortex<TypeVector, TypeMatrix, TypeRef>::getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const {
-    TypeMatrix J = TypeMatrix::Zero();
-    J(0,0) = -std::sin(x(0)) * std::sin(x(1)); J(0,1) = std::cos(x[0]) * std::cos(x[1]);
-    J(1,0) = -std::cos(x[0]) * std::cos(x(1)); J(1,1) = std::sin(x(0)) * std::sin(x(1));
-    return J;
-}
-
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TypeVector TaylorGreenVortex<TypeVector, TypeMatrix, TypeRef>::getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const {
-    return TypeVector::Zero();
-}
 
 }
 

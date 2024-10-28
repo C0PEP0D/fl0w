@@ -1,45 +1,32 @@
-#ifndef FL0W_ABC_H
-#define FL0W_ABC_H
+#ifndef FL0W_UNIFORM_H
+#define FL0W_UNIFORM_H
 #pragma once
 
 #include "fl0w/flow.h"
+#include <array>
 
 namespace fl0w {
 
 namespace analytic {
 
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-class Uniform : public Flow<TypeVector, TypeMatrix, TypeRef> {
+template<typename _tSpaceVector, typename _tSpaceMatrix, template<typename...> class _tView, std::array<double, _tSpaceVector::SizeAtCompileTime> Velocity>
+class FlowUniform : public Flow<_tSpaceVector, _tSpaceMatrix, _tView> {
     public:
-        Uniform();
-
-        TypeVector getVelocity(const TypeRef<const TypeVector>& x, const double& t) const override;
-        TypeMatrix getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const override;
-        TypeVector getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const override;
+        using tBase = Flow<_tSpaceVector, _tSpaceMatrix, _tView>;
+        using typename tBase::tSpaceVector;
+        using typename tBase::tSpaceMatrix;
+        template<typename... Args> using tView = typename tBase::tView<Args...>;
     public:
-        TypeVector u;
+        static tSpaceVector getVelocity(const double* pX, const double t) {
+            return tView<const tSpaceVector>(Velocity.data());
+        };
+        static tSpaceMatrix getVelocityGradients(const double* pX, const double t) {
+            return tSpaceMatrix::Zero();
+        };
+        static tSpaceVector getAcceleration(const double* pX, const double t) {
+            return tSpaceVector::Zero();
+        };
 };
-
-// ABC class
-
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-Uniform<TypeVector, TypeMatrix, TypeRef>::Uniform() : Flow<TypeVector, TypeMatrix, TypeRef>::Flow() : u(TypeVector::Zero()) { 
-}
-
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TypeVector Uniform<TypeVector, TypeMatrix, TypeRef>::getVelocity(const TypeRef<const TypeVector>& x, const double& t) const {
-    return u;
-}
-
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TypeMatrix Uniform<TypeVector, TypeMatrix, TypeRef>::getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const {
-    return TypeMatrix::Zero();
-}
-
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TypeVector Uniform<TypeVector, TypeMatrix, TypeRef>::getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const {
-    return TypeVector::Zero();
-}
 
 }
 

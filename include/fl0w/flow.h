@@ -7,69 +7,50 @@
 
 namespace fl0w {
 
-template<typename _TypeVector, typename _TypeMatrix, template<typename...> class _TypeRef>
+template<typename _tSpaceVector, typename _tSpaceMatrix, template<typename...> typename _tView>
 class Flow {
 	public:
-		using TypeVector = _TypeVector;
-		using TypeMatrix = _TypeMatrix;
-		template<typename... Args>
-		using TypeRef = _TypeRef<Args...>;
-	public:
-		Flow() {
-			
-		}
-	public:
-		virtual TypeVector getVelocity(const TypeRef<const TypeVector>& x, const double& t) const = 0;
-		virtual TypeMatrix getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const = 0;
-		virtual TypeVector getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const = 0;
+		using tSpaceVector = _tSpaceVector;
+		using tSpaceMatrix = _tSpaceMatrix;
+		template<typename... Args> using tView = _tView<Args...>;
 };
 
-template<typename TypeFlow>
-class FlowFrozen : public TypeFlow {
+template<typename tFlow, double Time>
+class FlowFrozen : public tFlow {
 	public:
-		using Type = TypeFlow;
-		using typename Type::TypeVector;
-		using typename Type::TypeMatrix;
+		using tBase = tFlow;
+		using typename tBase::tSpaceVector;
+		using typename tBase::tSpaceMatrix;
+		template<typename... Args> using tView = typename tBase::tView<Args...>;
 	public:
-		FlowFrozen(const double& p_time) : TypeFlow(), time(p_time) {
-			
+		static tSpaceVector getVelocity(const double* pX, const double t) {
+			return tBase::getVelocity(pX, Time);
 		}
-	public:
-		TypeVector getVelocity(const typename Type::TypeRef<const TypeVector>& x, const double& t) const override {
-			return Type::getVelocity(x, time);
+		static tSpaceMatrix getVelocityGradients(const double* pX, const double t) {
+			return tBase::getVelocityGradients(pX, time);
 		}
-		TypeMatrix getVelocityGradients(const typename Type::TypeRef<const TypeVector>& x, const double& t) const override {
-			return Type::getVelocityGradients(x, time);
+		static tSpaceVector getAcceleration(const double* pX, const double t) {
+			return tBase::getAcceleration(pX, time);
 		}
-		TypeVector getAcceleration(const typename Type::TypeRef<const TypeVector>& x, const double& t) const override {
-			return Type::getAcceleration(x, time);
-		}
-	public:
-		double time;
 };
 
-template<typename TypeFlow>
-class FlowReverse : public TypeFlow {
+template<typename tFlow, double TimeOrigin>
+class FlowReverse : public tFlow {
 	public:
-		using Type = TypeFlow;
-		using typename Type::TypeVector;
-		using typename Type::TypeMatrix;
+		using tBase = tFlow;
+		using typename tBase::tSpaceVector;
+		using typename tBase::tSpaceMatrix;
+		template<typename... Args> using tView = typename tBase::tView<Args...>;
 	public:
-		FlowReverse(const double& p_time) : TypeFlow(), time(p_time) {
-			
+		static tSpaceVector getVelocity(const double* pX, const double t) {
+			return tBase::getVelocity(pX, TimeOrigin - t);
 		}
-	public:
-		TypeVector getVelocity(const typename Type::TypeRef<const TypeVector>& x, const double& t) const override {
-			return -Type::getVelocity(x, time - t);
+		static tSpaceMatrix getVelocityGradients(const double* pX, const double t) {
+			return tBase::getVelocityGradients(pX, TimeOrigin - t);
 		}
-		TypeMatrix getVelocityGradients(const typename Type::TypeRef<const TypeVector>& x, const double& t) const override {
-			return -Type::getVelocityGradients(x, time - t);
+		static tSpaceVector getAcceleration(const double* pX, const double t) {
+			return tBase::getAcceleration(pX, TimeOrigin - t);
 		}
-		TypeVector getAcceleration(const typename Type::TypeRef<const TypeVector>& x, const double& t) const override {
-			return -Type::getAcceleration(x, time - t);
-		}
-	public:
-		double time;
 };
 
 }

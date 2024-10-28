@@ -9,51 +9,30 @@ namespace fl0w {
 
 namespace analytic {
 
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-class SimpleShear : public Flow<TypeVector, TypeMatrix, TypeRef> {
+template<typename _tSpaceVector, typename _tSpaceMatrix, template<typename...> class _tView, double _ShearRate>
+class FlowSimpleShear : public Flow<_tSpaceVector, _tSpaceMatrix, _tView> {
+	public:
+		using tBase = Flow<_tSpaceVector, _tSpaceMatrix, _tView>;
+		using typename tBase::tSpaceVector;
+		using typename tBase::tSpaceMatrix;
+		template<typename... Args> using tView = typename tBase::tView<Args...>;
+		constexpr static double ShearRate = _ShearRate;
     public:
-        SimpleShear();
-
-        void create(const double& gamma);
-        TypeVector getVelocity(const TypeRef<const TypeVector>& x, const double& t) const override;
-        TypeMatrix getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const override;
-        TypeVector getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const override;
-
-        // Attributes :
-        double gamma;
+        static tSpaceVector getVelocity(const double* pX, const double t) {
+        	return {
+        		ShearRate * pX[1],
+        		0.0
+        	};
+        };
+        static tSpaceMatrix getVelocityGradients(const double* pX, const double t) {
+        	tSpaceMatrix velocityGradients = tSpaceMatrix::Zero();
+       	    velocityGradients(0,1) = ShearRate;
+       	    return velocityGradients;
+        };
+        static tSpaceVector getAcceleration(const double* pX, const double t) {
+        	return tSpaceVector::Zero();
+        };
 };
-
-// SimpleShear class
-
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-SimpleShear<TypeVector, TypeMatrix, TypeRef>::SimpleShear() : Flow<TypeVector, TypeMatrix, TypeRef>::Flow(), gamma(std::numeric_limits<double>::quiet_NaN()) {
-
-}
-
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-void SimpleShear<TypeVector, TypeMatrix, TypeRef>::create(const double& p_gamma) {
-    gamma = p_gamma;
-}
-
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TypeVector SimpleShear<TypeVector, TypeMatrix, TypeRef>::getVelocity(const TypeRef<const TypeVector>& x, const double& t) const {
-    TypeVector u; u.fill(0.0);
-    u(0) = gamma * x(1);
-    return u;
-}
-
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TypeMatrix SimpleShear<TypeVector, TypeMatrix, TypeRef>::getVelocityGradients(const TypeRef<const TypeVector>& x, const double& t) const {
-    TypeMatrix J; J.fill(0.0);
-    J(0,1) = gamma;
-    return J;
-}
-
-template<typename TypeVector, typename TypeMatrix, template<typename...> class TypeRef>
-TypeVector SimpleShear<TypeVector, TypeMatrix, TypeRef>::getAcceleration(const TypeRef<const TypeVector>& x, const double& t) const {
-    TypeVector a; a.fill(0.0);
-    return a;
-}
 
 }
 
