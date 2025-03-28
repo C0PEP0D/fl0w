@@ -19,9 +19,6 @@ namespace fl0w {
 template<typename tVector, typename tMatrix, template<typename...> class tView>
 struct Jhtdb {
 
-	// data
-	inline static std::unordered_map<std::string, tVector> velocity;
-	inline static std::unordered_map<std::string, tMatrix> gradients;
 	// query
 	inline static std::string authToken = "edu.jhu.pha.turbulence.testing-201406";
 	inline static std::string velocitySpatialInterpolation = "lag6";
@@ -31,6 +28,40 @@ struct Jhtdb {
 	inline static long unsigned int maxPointNumberPerQuery = 4096;
 
 	// iternal
+
+	static tVector getPoint(const std::string& key) {
+		// init
+		tVector output;
+		// util
+		unsigned int start;
+		unsigned int end;
+		// x0
+		start = 0;
+		end = key.find("_");
+		output[0] = float(key.substr(start, end));
+		// x1
+		start = end + 1;
+		end = key.find(start, "_");
+		output[1] = float(key.substr(start, end));
+		// x2
+		start = end + 1;
+		end = key.find(start, "_");
+		output[2] = float(key.substr(start, end));
+		// output
+		return output;
+	}
+
+	static double getT(const std::string& key) {
+		// init
+		double output;
+		// util
+		unsigned int start;
+		unsigned int end;
+		// x0
+		output = double(key.substr(key.rfind(start, "_") + 1));
+		// output
+		return output;
+	}
 
 	static std::string getMapKey(const float* pX, const double t) {
 		return std::to_string(pX[0]) + "_" + std::to_string(pX[1]) + "_" + std::to_string(pX[2]) + "_" + std::to_string(t);
@@ -91,9 +122,13 @@ struct Jhtdb {
 	}
 
 	struct Isotropic {
+		// data
+		inline static std::unordered_map<double, float**> velocityPreparedPoints;
+		inline static std::unordered_map<std::string, tVector> velocity;
+		inline static std::unordered_map<double, float**> velocityGradientsPreparedPoints;
+		inline static std::unordered_map<std::string, tMatrix> velocityGradients;
 		// dataset
 		inline static std::string dataset = "isotropic1024coarse";
-		// inline static std::string field;
 		// numerical parameters
 		static constexpr double lx = 2.0 * M_PI;
 		static constexpr double ly = 2.0 * M_PI;
@@ -115,6 +150,8 @@ struct Jhtdb {
 		inline static const double integralLengthScale = 1.364;
 		inline static const double largeEddyTurnOverTime = 1.99;
 
+		// get
+
 		static tVector getVelocity(const double* pX, const double t) {
 			// periodicity
 			float pXPeriodic[3];
@@ -134,16 +171,28 @@ struct Jhtdb {
 			xToXPeriodic(pX, pXPeriodic);
 			// query
 			std::string key = getMapKey(pXPeriodic, t);
-			if(gradients.count(key) == 1) {
-				return gradients.at(key);
+			if(velocityGradients.count(key) == 1) {
+				return velocityGradients.at(key);
 			} else {
 				return queryVelocityGradients(dataset, pXPeriodic, t);
 			}
 		}
 
-		static tVector getAcceleration(const double* pX, const double t) {
-			std::cout << "WARNING: JHTDB getAcceleration is not yet working. Returning 0." << std::endl;
-			return tVector::Zero();
+		// prepare
+
+		static tVector prepareVelocity(const double* pX, const double t) {
+			// periodicity
+			float pXPeriodic[3];
+			xToXPeriodic(pX, pXPeriodic);
+			// prepare
+			// velocityPreparedPoints[t] = pXPeriodic; // TODO !!!
+		}
+
+		static tVector prepareVelocityGradients(const double* pX, const double t) {
+			// periodicity
+			float pXPeriodic[3];
+			xToXPeriodic(pX, pXPeriodic);
+			// prepare
 		}
 
 		// internal
