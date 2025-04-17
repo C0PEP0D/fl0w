@@ -13,6 +13,10 @@
 #include "getjhtdb/getData.h"
 // std
 #include <string>
+#include <mutex>
+
+#include <chrono>
+#include <thread>
 
 namespace fl0w {
 
@@ -24,48 +28,8 @@ struct Jhtdb {
 	inline static std::string velocitySpatialInterpolation = "lag6";
 	inline static std::string gradientsSpatialInterpolation = "fd4lag4";
 	inline static std::string temporalInterpolation = "pchip";
-	inline static unsigned int maxAttemptNumber = 256;
-	inline static long unsigned int maxPointNumberPerQuery = 4096;
-
-	// iternal
-
-	static tVector getPoint(const std::string& key) {
-		// init
-		tVector output;
-		// util
-		unsigned int start;
-		unsigned int end;
-		// x0
-		start = 0;
-		end = key.find("_");
-		output[0] = float(key.substr(start, end));
-		// x1
-		start = end + 1;
-		end = key.find(start, "_");
-		output[1] = float(key.substr(start, end));
-		// x2
-		start = end + 1;
-		end = key.find(start, "_");
-		output[2] = float(key.substr(start, end));
-		// output
-		return output;
-	}
-
-	static double getT(const std::string& key) {
-		// init
-		double output;
-		// util
-		unsigned int start;
-		unsigned int end;
-		// x0
-		output = double(key.substr(key.rfind(start, "_") + 1));
-		// output
-		return output;
-	}
-
-	static std::string getMapKey(const float* pX, const double t) {
-		return std::to_string(pX[0]) + "_" + std::to_string(pX[1]) + "_" + std::to_string(pX[2]) + "_" + std::to_string(t);
-	}
+	static constexpr unsigned int maxAttemptNumber = 256;
+	static constexpr long unsigned int maxPointNumberPerQuery = 4096;
 
 	// base queries
 
@@ -92,6 +56,16 @@ struct Jhtdb {
 		free(output);
 		
 		return vOutput;
+	}
+
+	static double** queryVelocityArray(std::string& dataset, float (*points)[3], const unsigned int n, const double t) {
+
+		// query
+		const std::string variable = "velocity";
+		const std::string spatialOperator = "field";
+
+		double **output = getData(authToken.data(), dataset.data(), t, velocitySpatialInterpolation.data(), temporalInterpolation.data(), variable.data(), spatialOperator.data(), points, n);
+		return output;
 	}
 
 	static tMatrix queryVelocityGradients(std::string& dataset, const float* pX, const double t) {
@@ -121,12 +95,24 @@ struct Jhtdb {
 		return mOutput;
 	}
 
+	static double** queryVelocityGradientsArray(std::string& dataset, float (*points)[3], const unsigned int n, const double t) {
+		// query
+		const std::string variable = "velocity";
+		const std::string spatialOperator = "gradient";
+
+		double **output = getData(authToken.data(), dataset.data(), t, gradientsSpatialInterpolation.data(), temporalInterpolation.data(), variable.data(), spatialOperator.data(), points, n);
+		return output;
+	}
+
 	struct Isotropic {
+		// preparation
+		inline static std::unordered_map<double, unsigned int> preparedVelocityPointIndex;
+		inline static std::unordered_map<double, unsigned int> preparedVelocityGradientsPointIndex;
+		inline static std::unordered_map<double, float (*)[3]> preparedVelocityPoints;
+		inline static std::unordered_map<double, float (*)[3]> preparedVelocityGradientsPoints;
 		// data
-		inline static std::unordered_map<double, float**> velocityPreparedPoints;
-		inline static std::unordered_map<std::string, tVector> velocity;
-		inline static std::unordered_map<double, float**> velocityGradientsPreparedPoints;
-		inline static std::unordered_map<std::string, tMatrix> velocityGradients;
+		inline static std::unordered_map<double, std::unordered_map<std::string, tVector>> preparedVelocity;
+		inline static std::unordered_map<double, std::unordered_map<std::string, tMatrix>> preparedVelocityGradients;
 		// dataset
 		inline static std::string dataset = "isotropic1024coarse";
 		// numerical parameters
@@ -149,6 +135,12 @@ struct Jhtdb {
 		inline static const double kolmogorovLengthScale = 0.00280;
 		inline static const double integralLengthScale = 1.364;
 		inline static const double largeEddyTurnOverTime = 1.99;
+		// mutex
+		inline static std::mutex preparedVelocityMutex;
+		inline static std::mutex updateVelocityMutex;
+		
+		inline static std::mutex preparedVelocityGradientsMutex;
+		inline static std::mutex updateVelocityGradientsMutex;
 
 		// get
 
@@ -156,43 +148,133 @@ struct Jhtdb {
 			// periodicity
 			float pXPeriodic[3];
 			xToXPeriodic(pX, pXPeriodic);
+			const std::string xPeriodicKey = getKeyFromPoint(pXPeriodic);
+			// prepare and update
+			prepareVelocity(pX, t);
+			// update
+			updatePreparedVelocity(t);
 			// query
-			std::string key = getMapKey(pXPeriodic, t);
-			if(velocity.count(key) == 1) {
-				return velocity.at(key);
-			} else {
-				return queryVelocity(dataset, pXPeriodic, t);
-			}
+			return preparedVelocity.at(t).at(xPeriodicKey);
 		}
 	
 		static tMatrix getVelocityGradients(const double* pX, const double t) {
 			// periodicity
 			float pXPeriodic[3];
 			xToXPeriodic(pX, pXPeriodic);
+			const std::string xPeriodicKey = getKeyFromPoint(pXPeriodic);
+			// prepare
+			prepareVelocityGradients(pX, t);
+			// update
+			updatePreparedVelocityGradients(t);
 			// query
-			std::string key = getMapKey(pXPeriodic, t);
-			if(velocityGradients.count(key) == 1) {
-				return velocityGradients.at(key);
-			} else {
-				return queryVelocityGradients(dataset, pXPeriodic, t);
-			}
+			return preparedVelocityGradients.at(t).at(xPeriodicKey);
 		}
 
 		// prepare
 
-		static tVector prepareVelocity(const double* pX, const double t) {
+		static void prepareVelocity(const double* pX, const double t) {
 			// periodicity
 			float pXPeriodic[3];
 			xToXPeriodic(pX, pXPeriodic);
-			// prepare
-			// velocityPreparedPoints[t] = pXPeriodic; // TODO !!!
+			const std::string xPeriodicKey = getKeyFromPoint(pXPeriodic);
+			if (preparedVelocity.count(t) == 0 || preparedVelocity.at(t).count(xPeriodicKey) == 0) {
+				// lock
+				preparedVelocityMutex.lock();
+				// prepare
+				if(preparedVelocityPoints.count(t) == 0) {
+					preparedVelocityPointIndex[t] = 0;
+					preparedVelocityPoints[t] = new float[maxPointNumberPerQuery][3]; // TODO: Free ?
+				}
+				preparedVelocityPoints[t][preparedVelocityPointIndex[t]][0] = pXPeriodic[0];
+				preparedVelocityPoints[t][preparedVelocityPointIndex[t]][1] = pXPeriodic[1];
+				preparedVelocityPoints[t][preparedVelocityPointIndex[t]][2] = pXPeriodic[2];
+				preparedVelocityPointIndex[t] += 1;
+				// init prepared
+				preparedVelocity[t][xPeriodicKey] = tVector::Zero();
+				// if prepared
+				if(preparedVelocityPointIndex[t] >= maxPointNumberPerQuery){
+					updatePreparedVelocity(t, true);
+				}
+				// unlock
+				preparedVelocityMutex.unlock();
+			}
 		}
 
-		static tVector prepareVelocityGradients(const double* pX, const double t) {
+		static void updatePreparedVelocity(const double t, const bool isLocked = false) {
+			updateVelocityMutex.lock();
+			
+			if(not isLocked) {
+				preparedVelocityMutex.lock();
+			}
+			
+			long unsigned int pointNumber = preparedVelocityPointIndex[t];
+			float (*points)[3] = new float[pointNumber][3];
+			for(unsigned int i = 0; i < pointNumber; ++i) {
+				for(unsigned int j = 0; j < 3; ++j) {
+					points[i][j] = preparedVelocityPoints[t][i][j];
+				}
+			}
+			preparedVelocityPointIndex[t] = 0;
+
+			if(not isLocked) {
+				preparedVelocityMutex.unlock();
+			}
+			
+			if (pointNumber > 0) {
+				double** velocityArray = queryVelocityArray(dataset, points, pointNumber, t);
+				for(unsigned int index = 0; index < pointNumber; ++index) {
+					const std::string pointKey = getKeyFromPoint(points[index]);
+					preparedVelocity[t][pointKey] = tView<tVector>(velocityArray[index]);
+				}
+				free(velocityArray);
+			}
+			free(points);
+
+			updateVelocityMutex.unlock();
+		}
+
+		static void prepareVelocityGradients(const double* pX, const double t) {
 			// periodicity
 			float pXPeriodic[3];
 			xToXPeriodic(pX, pXPeriodic);
-			// prepare
+			const std::string xPeriodicKey = getKeyFromPoint(pXPeriodic);
+			if (preparedVelocityGradients.count(t) == 0 || preparedVelocityGradients.at(t).count(xPeriodicKey) == 0) {
+				// lock
+				preparedVelocityGradientsMutex.lock();
+				// prepare
+				if(preparedVelocityGradientsPoints.count(t) == 0) {
+					preparedVelocityGradientsPointIndex[t] = 0;
+					preparedVelocityGradientsPoints[t] = new float[maxPointNumberPerQuery][3]; // TODO: Free ?
+				}
+				preparedVelocityGradientsPoints[t][preparedVelocityGradientsPointIndex[t]][0] = pXPeriodic[0];
+				preparedVelocityGradientsPoints[t][preparedVelocityGradientsPointIndex[t]][1] = pXPeriodic[1];
+				preparedVelocityGradientsPoints[t][preparedVelocityGradientsPointIndex[t]][2] = pXPeriodic[2];
+				preparedVelocityGradientsPointIndex[t] += 1;
+				// init prepared
+				preparedVelocity[t][xPeriodicKey] = tVector::Zero();
+				// if prepared
+				if(preparedVelocityGradientsPointIndex[t] >= maxPointNumberPerQuery){
+					updatePreparedVelocityGradients(t);
+				}
+				// unlock
+				preparedVelocityGradientsMutex.unlock();
+			}
+		}
+
+		static void updatePreparedVelocityGradients(const double t) {
+			preparedVelocityGradientsMutex.lock();
+			preparedVelocityGradientsMutex.unlock();
+			
+			if(preparedVelocityGradientsPointIndex[t] > 0) {
+				double** velocityGradientsArray = queryVelocityGradientsArray(dataset, preparedVelocityGradientsPoints[t], preparedVelocityGradientsPointIndex[t], t);
+				for(unsigned int index = 0; index < preparedVelocityGradientsPointIndex[t]; ++index) {
+					const std::string pointKey = getKeyFromPoint(preparedVelocityGradientsPoints[t][index]);
+					preparedVelocityGradients[t][pointKey] = tView<tMatrix>(velocityGradientsArray[index]);
+				}
+				free(velocityGradientsArray);
+				// restart preparation
+				preparedVelocityGradientsPointIndex[t] = 0;
+			}
 		}
 
 		// internal
@@ -219,6 +301,34 @@ struct Jhtdb {
 		}
 		
 	};
+
+	// iternal
+	
+	static std::string getKeyFromPoint(const float* pX) {
+		return std::to_string(pX[0]) + "_" + std::to_string(pX[1]) + "_" + std::to_string(pX[2]);
+	}
+
+	static tVector getPointFromKey(const std::string& key) {
+		// init
+		tVector output;
+		// util
+		unsigned int start;
+		unsigned int end;
+		// x0
+		start = 0;
+		end = key.find('_');
+		output[0] = float(key.substr(start, end));
+		// x1
+		start = end + 1;
+		end = key.find(start, '_');
+		output[1] = float(key.substr(start, end));
+		// x2
+		start = end + 1;
+		end = key.find(start, '_');
+		output[2] = float(key.substr(start, end));
+		// output
+		return output;
+	}
 
 	// batch queries
 
