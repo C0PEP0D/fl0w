@@ -149,10 +149,6 @@ struct Jhtdb {
 			float pXPeriodic[3];
 			xToXPeriodic(pX, pXPeriodic);
 			const std::string xPeriodicKey = getKeyFromPoint(pXPeriodic);
-			// prepare and update
-			prepareVelocity(pX, t);
-			// update
-			updatePreparedVelocity(t);
 			// query
 			return preparedVelocity.at(t).at(xPeriodicKey);
 		}
@@ -162,15 +158,16 @@ struct Jhtdb {
 			float pXPeriodic[3];
 			xToXPeriodic(pX, pXPeriodic);
 			const std::string xPeriodicKey = getKeyFromPoint(pXPeriodic);
-			// prepare
-			prepareVelocityGradients(pX, t);
-			// update
-			updatePreparedVelocityGradients(t);
 			// query
 			return preparedVelocityGradients.at(t).at(xPeriodicKey);
 		}
 
 		// prepare
+
+		static void prepare(const double t) {
+			updatePreparedVelocity(t);
+			updatePreparedVelocityGradients(t);
+		}
 
 		static void prepareVelocity(const double* pX, const double t) {
 			// periodicity
